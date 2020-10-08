@@ -4,7 +4,7 @@ import User from '../models/userModel.js';
 
 // @desc    Auth user & get token
 // @route   POST /api/users/login
-// @desc    Public
+// @access  Public
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -26,7 +26,7 @@ const authUser = asyncHandler(async (req, res) => {
 
 // @desc    Register a new user
 // @route   POST /api/users
-// @desc    Public
+// @access  Public
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -57,9 +57,9 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    GET user profile
+// @desc    Get user profile
 // @route   GET /api/users/profile
-// @desc    Private
+// @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
@@ -78,14 +78,13 @@ const getUserProfile = asyncHandler(async (req, res) => {
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
-// @desc    Private
+// @access  Private
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
-
     if (req.body.password) {
       user.password = req.body.password;
     }
@@ -105,9 +104,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    GET all users
+// @desc    Get all users
 // @route   GET /api/users
-// @desc    Private/Admin
+// @access  Private/Admin
 const getUsers = asyncHandler(async (req, res) => {
   const users = await User.find({});
   res.json(users);
@@ -115,13 +114,52 @@ const getUsers = asyncHandler(async (req, res) => {
 
 // @desc    Delete user
 // @route   DELETE /api/users/:id
-// @desc    Private/Admin
+// @access  Private/Admin
 const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (user) {
     await user.remove();
     res.json({ message: 'User removed' });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+// @desc    Get user by ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
+const getUserById = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id).select('-password');
+
+  if (user) {
+    res.json(user);
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const updateUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (user) {
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+    user.isAdmin = req.body.isAdmin;
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      isAdmin: updatedUser.isAdmin,
+    });
   } else {
     res.status(404);
     throw new Error('User not found');
@@ -135,4 +173,6 @@ export {
   updateUserProfile,
   getUsers,
   deleteUser,
+  getUserById,
+  updateUser,
 };
